@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🕯️ RelicVault — Haunted Artifacts</title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=MedievalSharp&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080808;--card:#100f0f;--blood:#8b0000;--crimson:#c0392b;
+  --gold:#c9a84c;--gold2:#e8c96d;--light:#e8e0d0;--muted:#9a8a7a;
+  --glow:0 0 20px rgba(139,0,0,.6),0 0 60px rgba(139,0,0,.2);
+  --gglow:0 0 15px rgba(201,168,76,.5);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--light);font-family:"Poppins",sans-serif;overflow-x:hidden;
+  cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='4' fill='%238b0000' opacity='.9'/%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%23c9a84c' stroke-width='1' opacity='.6'/%3E%3C/svg%3E") 10 10,crosshair}
+
+#particles-canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+
+/* TOAST */
+#toast{position:fixed;bottom:30px;right:30px;background:linear-gradient(135deg,#1a0505,#2a0808);
+  border:1px solid var(--blood);border-left:4px solid var(--crimson);color:var(--light);
+  padding:16px 24px;border-radius:12px;font-size:14px;font-weight:500;
+  box-shadow:var(--glow),0 8px 30px rgba(0,0,0,.8);z-index:9999;
+  transform:translateX(120%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);max-width:320px}
+#toast.show{transform:translateX(0)}
+
+/* NAVBAR */
+.navbar{width:100%;height:80px;background:linear-gradient(180deg,rgba(0,0,0,.98),rgba(8,0,0,.95));
+  display:flex;justify-content:space-between;align-items:center;padding:0 40px;
+  position:fixed;top:0;left:0;z-index:1000;border-bottom:1px solid rgba(139,0,0,.3);
+  backdrop-filter:blur(12px);box-shadow:0 2px 40px rgba(139,0,0,.2)}
+.navbar::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--blood),var(--gold),var(--blood),transparent);
+  animation:navline 4s ease-in-out infinite}
+@keyframes navline{0%,100%{opacity:.4}50%{opacity:1}}
+.logo{font-family:"Creepster",cursive;font-size:36px;color:var(--gold);letter-spacing:2px;text-shadow:var(--gglow)}
+.logo span{color:var(--crimson)}
+.candle-icon{display:inline-block;animation:flicker 2s ease-in-out infinite;transform-origin:bottom center}
+@keyframes flicker{0%,100%{opacity:1;transform:scaleY(1) rotate(-1deg);filter:brightness(1)}25%{opacity:.8;transform:scaleY(.95) rotate(1deg);filter:brightness(1.3)}50%{opacity:1;transform:scaleY(1.05) rotate(-.5deg);filter:brightness(.9)}75%{opacity:.85;transform:scaleY(.97) rotate(1.5deg);filter:brightness(1.2)}}
+.nav-links{display:flex;gap:6px;align-items:center}
+.nav-btn{padding:10px 18px;background:transparent;color:var(--muted);border:1px solid transparent;border-radius:8px;cursor:pointer;transition:all .3s;font:500 14px "Poppins",sans-serif;letter-spacing:.5px}
+.nav-btn:hover,.nav-btn.active-btn{background:rgba(139,0,0,.2);border-color:rgba(139,0,0,.4);color:var(--light)}
+.cart-btn{background:linear-gradient(135deg,#1a0505,#2a0a0a);border:1px solid var(--blood);color:var(--gold);position:relative}
+.cart-btn:hover{box-shadow:var(--glow)}
+#cart-count{position:absolute;top:-6px;right:-6px;background:var(--crimson);color:#fff;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center}
+.login-btn{background:linear-gradient(135deg,#1a0a00,#2a1500);border:1px solid rgba(201,168,76,.3);color:var(--gold)}
+.login-btn:hover{border-color:var(--gold);box-shadow:var(--gglow)}
+#nav-user{display:none;align-items:center;gap:10px}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blood),#5a0000);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold2)}
+#user-name-display{font-size:14px;color:var(--light);font-weight:500}
+.logout-btn{padding:7px 14px;background:transparent;border:1px solid rgba(139,0,0,.3);color:var(--muted);border-radius:6px;cursor:pointer;font:13px "Poppins",sans-serif;transition:all .3s}
+.logout-btn:hover{border-color:var(--blood);color:#e07070}
+
+/* PAGE */
+.main{margin-top:80px;position:relative;z-index:1}
+.page{display:none;min-height:calc(100vh - 80px);padding:50px 40px;animation:pageIn .5s cubic-bezier(.25,.46,.45,.94)}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(20px);filter:brightness(.5)}to{opacity:1;transform:translateY(0);filter:brightness(1)}}
+#home{padding:0}
+
+/* HERO */
+.hero{min-height:calc(100vh - 80px);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.3) 0%,rgba(8,0,0,.85) 70%,var(--bg) 100%),url("https://images.unsplash.com/photo-1509557965875-b88c97052f0e?q=80&w=1800&auto=format&fit=crop") center/cover no-repeat;filter:saturate(.4) brightness(.55)}
+.hero-fog{position:absolute;inset:0;background:radial-gradient(ellipse 120% 60% at 50% 100%,rgba(100,0,0,.25) 0%,transparent 70%);animation:fogPulse 6s ease-in-out infinite}
+@keyframes fogPulse{0%,100%{opacity:.6;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.05)}}
+.hero-content{position:relative;z-index:2;text-align:center;padding:60px 40px;max-width:900px}
+.hero-eyebrow{font-size:13px;letter-spacing:6px;text-transform:uppercase;color:var(--blood);margin-bottom:20px;font-weight:600;animation:pulseRed 3s ease-in-out infinite}
+@keyframes pulseRed{0%,100%{text-shadow:0 0 10px rgba(139,0,0,.5)}50%{text-shadow:0 0 25px rgba(192,57,43,.9),0 0 50px rgba(139,0,0,.4)}}
+.hero-title{font-family:"Creepster",cursive;font-size:clamp(64px,10vw,110px);color:var(--gold);line-height:1;text-shadow:var(--gglow),0 0 80px rgba(201,168,76,.2),4px 4px 0 rgba(139,0,0,.6);margin-bottom:10px;animation:titleGlow 4s ease-in-out infinite}
+@keyframes titleGlow{0%,100%{text-shadow:var(--gglow),0 0 80px rgba(201,168,76,.2),4px 4px 0 rgba(139,0,0,.6)}50%{text-shadow:0 0 30px rgba(201,168,76,.8),0 0 100px rgba(201,168,76,.3),4px 4px 0 rgba(139,0,0,.6)}}
+.hero-subtitle{font-family:"MedievalSharp",serif;font-size:18px;color:var(--crimson);letter-spacing:3px;margin-bottom:30px}
+.hero-desc{font-size:16px;color:var(--muted);line-height:1.9;max-width:600px;margin:0 auto 40px}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.hero-scroll{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:.5;animation:scrollBounce 2s ease-in-out infinite}
+@keyframes scrollBounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.hero-scroll span{font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+.hero-scroll .arrow{font-size:20px;color:var(--blood)}
+
+/* BUTTONS */
+.btn-primary{padding:16px 36px;background:linear-gradient(135deg,var(--blood),#5a0000);color:var(--gold2);border:1px solid var(--blood);border-radius:6px;font:700 15px "Poppins",sans-serif;letter-spacing:1px;cursor:pointer;transition:all .3s;box-shadow:var(--glow);position:relative;overflow:hidden}
+.btn-primary::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);transition:left .5s}
+.btn-primary:hover::before{left:100%}
+.btn-primary:hover{background:linear-gradient(135deg,var(--crimson),var(--blood));box-shadow:0 0 30px rgba(192,57,43,.7);transform:translateY(-2px)}
+.btn-secondary{padding:16px 36px;background:transparent;color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:6px;font:600 15px "Poppins",sans-serif;letter-spacing:1px;cursor:pointer;transition:all .3s}
+.btn-secondary:hover{background:rgba(201,168,76,.08);border-color:var(--gold);box-shadow:var(--gglow);transform:translateY(-2px)}
+
+/* FEATURED */
+.featured-strip{padding:60px 40px;background:linear-gradient(180deg,var(--bg) 0%,#0d0505 50%,var(--bg) 100%)}
+.strip-label{display:flex;align-items:center;gap:16px;margin-bottom:40px}
+.strip-label::before,.strip-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(139,0,0,.4),transparent)}
+.strip-label-text{font-family:"Creepster",cursive;font-size:28px;color:var(--gold);letter-spacing:3px;white-space:nowrap}
+
+/* SECTION */
+.section-title{font-family:"Creepster",cursive;font-size:42px;color:var(--gold);margin-bottom:8px;letter-spacing:2px;text-shadow:var(--gglow)}
+.section-sub{color:var(--muted);font-size:14px;letter-spacing:4px;text-transform:uppercase;margin-bottom:50px;position:relative;padding-bottom:20px}
+.section-sub::after{content:'';position:absolute;bottom:0;left:0;width:60px;height:2px;background:linear-gradient(90deg,var(--blood),transparent)}
+
+/* FILTER */
+.filter-bar{display:flex;gap:10px;margin-bottom:36px;flex-wrap:wrap}
+.filter-btn{padding:8px 20px;border-radius:30px;border:1px solid rgba(139,0,0,.3);background:transparent;color:var(--muted);font:13px "Poppins",sans-serif;cursor:pointer;transition:all .3s}
+.filter-btn:hover,.filter-btn.active{background:rgba(139,0,0,.2);border-color:var(--blood);color:var(--light)}
+
+/* CARDS */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px}
+.card{background:var(--card);border-radius:16px;overflow:hidden;border:1px solid rgba(139,0,0,.15);transition:all .4s cubic-bezier(.25,.46,.45,.94);position:relative}
+.card::before{content:'';position:absolute;inset:0;border-radius:16px;background:linear-gradient(135deg,rgba(139,0,0,.05),transparent);opacity:0;transition:opacity .4s;z-index:1;pointer-events:none}
+.card:hover{transform:translateY(-8px);border-color:rgba(139,0,0,.4);box-shadow:0 20px 60px rgba(139,0,0,.25)}
+.card:hover::before{opacity:1}
+.card-img-wrap{position:relative;overflow:hidden;height:220px}
+.card img{width:100%;height:100%;object-fit:cover;transition:transform .6s,filter .4s;filter:saturate(.7) brightness(.8)}
+.card:hover img{transform:scale(1.06);filter:saturate(.85) brightness(.9)}
+.card-badge{position:absolute;top:14px;left:14px;background:rgba(139,0,0,.85);backdrop-filter:blur(8px);color:var(--gold2);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1px solid rgba(201,168,76,.3);z-index:2}
+.card-content{padding:22px;position:relative;z-index:2}
+.card-content h3{font-family:"Creepster",cursive;font-size:24px;color:var(--gold);margin-bottom:8px;letter-spacing:1px}
+.card-content p{color:var(--muted);font-size:13px;line-height:1.7;margin-bottom:14px}
+.card-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.price{color:var(--gold2);font-size:24px;font-weight:700;text-shadow:var(--gglow)}
+.curse-tag{background:rgba(139,0,0,.15);border:1px solid rgba(139,0,0,.3);color:#e07070;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.buy-btn{width:100%;padding:12px;background:linear-gradient(135deg,#1a0505,#2a0808);border:1px solid var(--blood);color:var(--gold);border-radius:8px;font:600 14px "Poppins",sans-serif;cursor:pointer;transition:all .3s;letter-spacing:1px}
+.buy-btn:hover{background:linear-gradient(135deg,var(--blood),#5a0000);color:var(--gold2);box-shadow:var(--glow)}
+
+/* CART */
+.cart-layout{display:grid;grid-template-columns:1fr 340px;gap:30px;max-width:1100px}
+.cart-items-section,.cart-summary{background:var(--card);border:1px solid rgba(139,0,0,.15);border-radius:20px;padding:30px}
+.cart-summary{height:fit-content;position:sticky;top:100px;border-color:rgba(139,0,0,.2)}
+.cart-section-head,.summary-title{font-family:"Creepster",cursive;font-size:22px;color:var(--gold);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(139,0,0,.2)}
+.cart-empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.cart-empty .empty-icon{font-size:60px;margin-bottom:16px;opacity:.4}
+#cart-items{list-style:none}
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.04);gap:16px}
+.cart-item:last-child{border-bottom:none}
+.cart-item-name{font-weight:600;color:var(--light);font-size:15px;margin-bottom:4px}
+.cart-item-price{color:var(--gold);font-size:15px;font-weight:700}
+.remove-btn{background:rgba(139,0,0,.15);border:1px solid rgba(139,0,0,.3);color:#e07070;padding:6px 12px;border-radius:6px;cursor:pointer;font:600 12px "Poppins",sans-serif;transition:all .3s}
+.remove-btn:hover{background:rgba(139,0,0,.35);color:#fff}
+.summary-row{display:flex;justify-content:space-between;margin-bottom:12px;font-size:14px;color:var(--muted)}
+.summary-row.total{font-size:20px;font-weight:700;color:var(--gold2);padding-top:16px;margin-top:16px;border-top:1px solid rgba(139,0,0,.2)}
+.checkout-btn{margin-top:24px;width:100%;padding:16px;background:linear-gradient(135deg,var(--blood),#5a0000);border:1px solid var(--blood);color:var(--gold2);border-radius:10px;font:700 16px "Poppins",sans-serif;cursor:pointer;letter-spacing:1px;transition:all .3s;box-shadow:var(--glow)}
+.checkout-btn:hover{background:linear-gradient(135deg,var(--crimson),var(--blood));transform:translateY(-2px)}
+
+/* ABOUT */
+.about-hero{position:relative;border-radius:20px;overflow:hidden;height:300px;margin-bottom:60px}
+.about-hero img{width:100%;height:100%;object-fit:cover;filter:saturate(.3) brightness(.5)}
+.about-hero-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(139,0,0,.4),rgba(0,0,0,.7));display:flex;align-items:center;padding:50px}
+.about-hero-text h2{font-family:"Creepster",cursive;font-size:48px;color:var(--gold);text-shadow:var(--gglow)}
+.about-hero-text p{color:var(--muted);font-size:16px;margin-top:10px}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:40px}
+.about-card{background:var(--card);border:1px solid rgba(139,0,0,.15);border-radius:16px;padding:30px;transition:all .3s}
+.about-card:hover{border-color:rgba(139,0,0,.35);background:#130e0e;transform:translateY(-4px)}
+.about-card .icon{font-size:36px;margin-bottom:16px}
+.about-card h3{font-family:"Creepster",cursive;font-size:22px;color:var(--gold);margin-bottom:10px}
+.about-card p,.about-lore p{color:var(--muted);line-height:1.8;font-size:14px}
+.about-lore{background:linear-gradient(135deg,#100808,#0d0505);border:1px solid rgba(139,0,0,.2);border-left:4px solid var(--blood);border-radius:16px;padding:40px}
+.about-lore p{line-height:2;font-size:15px;margin-bottom:16px}
+.about-lore p:last-child{margin-bottom:0}
+
+/* CONTACT */
+.contact-layout{display:grid;grid-template-columns:1fr 1.4fr;gap:40px;max-width:1000px}
+.contact-info{display:flex;flex-direction:column;gap:20px}
+.contact-info-card{background:var(--card);border:1px solid rgba(139,0,0,.15);border-radius:14px;padding:24px;display:flex;align-items:flex-start;gap:16px}
+.contact-info-card .icon{font-size:28px;flex-shrink:0;margin-top:2px}
+.contact-info-card h4{color:var(--gold);font-size:15px;margin-bottom:4px}
+.contact-info-card p{color:var(--muted);font-size:13px;line-height:1.7}
+.contact-form{background:var(--card);border:1px solid rgba(139,0,0,.15);border-radius:20px;padding:36px}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:14px 18px;background:#0d0808;border:1px solid rgba(139,0,0,.2);border-radius:10px;color:var(--light);font:14px "Poppins",sans-serif;transition:all .3s;outline:none}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--blood);box-shadow:0 0 0 3px rgba(139,0,0,.1),var(--glow);background:#100a0a}
+.form-group textarea{resize:vertical;min-height:120px}
+.form-group select option{background:#1a0808}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* FOOTER */
+footer{background:linear-gradient(180deg,var(--bg) 0%,#050202 100%);border-top:1px solid rgba(139,0,0,.2);padding:60px 40px 30px;margin-top:60px;position:relative;z-index:1}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:50px}
+.logo-foot{font-family:"Creepster",cursive;font-size:30px;color:var(--gold);margin-bottom:12px}
+.footer-brand p{color:var(--muted);font-size:13px;line-height:1.8;max-width:260px}
+.footer-col h4{color:var(--light);font-size:13px;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:10px}
+.footer-col li span{color:var(--muted);font-size:13px;cursor:pointer;transition:color .3s}
+.footer-col li span:hover{color:var(--gold)}
+.footer-bottom{border-top:1px solid rgba(139,0,0,.1);padding-top:24px;display:flex;justify-content:space-between}
+.footer-bottom p{color:var(--muted);font-size:12px}
+.footer-disclaimer{color:#5a4040;font-size:11px;font-style:italic}
+
+/* MODAL BASE */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:modalFade .3s}
+.modal-overlay.open{display:flex}
+@keyframes modalFade{from{opacity:0}to{opacity:1}}
+.modal{background:linear-gradient(135deg,#130808,#0d0505);border:1px solid var(--blood);border-radius:20px;padding:40px;width:90%;box-shadow:0 0 80px rgba(139,0,0,.4);animation:modalSlide .4s cubic-bezier(.34,1.56,.64,1);position:relative}
+@keyframes modalSlide{from{transform:scale(.8) translateY(30px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-close-x{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;transition:color .3s;line-height:1}
+.modal-close-x:hover{color:var(--light)}
+.modal-icon{font-size:60px;margin-bottom:16px;text-align:center}
+.modal h2{font-family:"Creepster",cursive;font-size:32px;color:var(--gold);margin-bottom:10px;text-align:center}
+.modal p.modal-sub{color:var(--muted);line-height:1.7;margin-bottom:30px;text-align:center}
+.modal-close{padding:14px 36px;background:linear-gradient(135deg,var(--blood),#5a0000);border:none;border-radius:8px;color:var(--gold2);font:700 15px "Poppins",sans-serif;letter-spacing:1px;cursor:pointer;transition:all .3s;box-shadow:var(--glow);display:block;margin:0 auto}
+.modal-close:hover{background:linear-gradient(135deg,var(--crimson),var(--blood));transform:translateY(-2px)}
+
+/* AUTH MODAL */
+.auth-tabs{display:flex;gap:0;margin-bottom:28px;border-radius:10px;overflow:hidden;border:1px solid rgba(139,0,0,.3)}
+.auth-tab{flex:1;padding:12px;background:transparent;border:none;color:var(--muted);font:600 14px "Poppins",sans-serif;cursor:pointer;transition:all .3s;letter-spacing:.5px}
+.auth-tab.active{background:linear-gradient(135deg,var(--blood),#5a0000);color:var(--gold2)}
+.auth-form{display:none}
+.auth-form.active{display:block}
+.auth-form .form-group input{background:#0a0505;border:1px solid rgba(139,0,0,.25)}
+.auth-form .form-group input:focus{border-color:var(--blood);box-shadow:0 0 0 3px rgba(139,0,0,.1)}
+.auth-submit{width:100%;padding:14px;background:linear-gradient(135deg,var(--blood),#5a0000);border:1px solid var(--blood);color:var(--gold2);border-radius:10px;font:700 15px "Poppins",sans-serif;cursor:pointer;margin-top:8px;letter-spacing:1px;transition:all .3s;box-shadow:var(--glow)}
+.auth-submit:hover{background:linear-gradient(135deg,var(--crimson),var(--blood));transform:translateY(-2px)}
+.auth-err{color:#e07070;font-size:13px;margin-top:8px;min-height:18px;text-align:center}
+
+/* PAYMENT MODAL */
+.pay-methods{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.pay-method{padding:14px 16px;background:#0d0808;border:1px solid rgba(139,0,0,.2);border-radius:12px;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:10px;font:500 14px "Poppins",sans-serif;color:var(--muted)}
+.pay-method:hover{border-color:rgba(139,0,0,.5);color:var(--light)}
+.pay-method.selected{background:rgba(139,0,0,.15);border-color:var(--blood);color:var(--light);box-shadow:0 0 0 1px rgba(139,0,0,.2)}
+.pay-method .pm-icon{font-size:22px}
+.pay-fields{display:none;animation:pageIn .3s}
+.pay-fields.active{display:block}
+.pay-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(139,0,0,.3),transparent);margin:20px 0}
+.card-visual{background:linear-gradient(135deg,#1a0808,#2a1010);border:1px solid rgba(201,168,76,.2);border-radius:14px;padding:20px 24px;margin-bottom:20px;position:relative;overflow:hidden}
+.card-visual::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(139,0,0,.1)}
+.card-visual::after{content:'';position:absolute;bottom:-20px;left:20px;width:80px;height:80px;border-radius:50%;background:rgba(201,168,76,.05)}
+.card-chip{font-size:26px;margin-bottom:12px}
+.card-num-display{font-family:monospace;font-size:18px;letter-spacing:3px;color:var(--gold2);margin-bottom:12px;text-shadow:var(--gglow)}
+.card-info-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.card-info-row span:last-child{color:var(--light);font-size:13px;font-weight:600}
+.pay-submit{width:100%;padding:16px;background:linear-gradient(135deg,var(--blood),#5a0000);border:1px solid var(--blood);color:var(--gold2);border-radius:10px;font:700 16px "Poppins",sans-serif;cursor:pointer;margin-top:20px;letter-spacing:1px;transition:all .3s;box-shadow:var(--glow)}
+.pay-submit:hover{background:linear-gradient(135deg,var(--crimson),var(--blood));transform:translateY(-2px)}
+.cod-box{text-align:center;padding:30px;background:#0a0505;border:1px solid rgba(139,0,0,.2);border-radius:14px}
+.cod-box .cod-icon{font-size:50px;margin-bottom:12px}
+.cod-box p{color:var(--muted);line-height:1.7;font-size:14px}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s,transform .6s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .navbar{padding:0 20px}
+  .nav-btn{padding:8px 12px;font-size:13px}
+  .page{padding:30px 20px}
+  .hero-title{font-size:60px}
+  .cart-layout,.about-grid,.contact-layout{grid-template-columns:1fr}
+  .cart-summary{position:static}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .form-row{grid-template-columns:1fr}
+  .hero-btns{flex-direction:column;align-items:center}
+  .featured-strip{padding:40px 20px}
+  .pay-methods{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .navbar{height:auto;flex-direction:column;padding:16px;gap:12px}
+  .main{margin-top:130px}
+  .nav-links{flex-wrap:wrap;justify-content:center}
+  .hero-title{font-size:46px}
+  .footer-grid{grid-template-columns:1fr}
+  .pay-methods{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body<>
+
+canvas id="particles-canvas"></canvas>
+<div id="toast"></div>
+
+<!-- SUCCESS MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="max-width:480px;text-align:center">
+    <div class="modal-icon" id="modal-icon">💀</div>
+    <h2 id="modal-title"></h2>
+    <p class="modal-sub" id="modal-msg"></p>
+    <button class="modal-close" onclick="closeModal()">Seal the Deal</button>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close-x" onclick="closeAuth()">✕</button>
+    <h2 style="margin-bottom:6px">🕯️ Enter the Vault</h2>
+    <p style="color:var(--muted);font-size:13px;text-align:center;margin-bottom:24px">Authenticate to proceed</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+    <!-- LOGIN -->
+    <div class="auth-form active" id="form-login">
+      <div class="form-group"><label>Email</label><input id="li-email" type="email" placeholder="your@email.com"></div>
+      <div class="form-group"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••"></div>
+      <div class="auth-err" id="li-err"></div>
+      <button class="auth-submit" onclick="doLogin()">☠ Enter the Vault</button>
+    </div>
+    <!-- SIGNUP -->
+    <div class="auth-form" id="form-signup">
+      <div class="form-group"><label>Full Name</label><input id="su-name" type="text" placeholder="Your name (or alias)"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Email</label><input id="su-email" type="email" placeholder="your@email.com"></div>
+        <div class="form-group"><label>Password</label><input id="su-pass" type="password" placeholder="Min 6 chars"></div>
+      </div>
+      <div class="auth-err" id="su-err"></div>
+      <button class="auth-submit" onclick="doSignup()">☠ Enter the Vault</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close-x" onclick="closePay()">✕</button>
+    <h2 style="margin-bottom:4px">💀 Complete the Process</h2>
+    <p style="color:var(--muted);font-size:13px;text-align:center;margin-bottom:24px">Choose your method of payment</p>
+
+    <div class="pay-methods">
+      <div class="pay-method selected" id="pm-card" onclick="selectPay('card')"><span class="pm-icon">💳</span><span>Credit / Debit Card</span></div>
+      <div class="pay-method" id="pm-upi" onclick="selectPay('upi')"><span class="pm-icon">📱</span><span>UPI</span></div>
+      <div class="pay-method" id="pm-net" onclick="selectPay('net')"><span class="pm-icon">🏦</span><span>Net Banking</span></div>
+      <div class="pay-method" id="pm-cod" onclick="selectPay('cod')"><span class="pm-icon">📦</span><span>Cash on Delivery</span></div>
+    </div>
+
+    <!-- CARD FIELDS -->
+    <div class="pay-fields active" id="pf-card">
+      <div class="card-visual">
+        <div class="card-chip">💳</div>
+        <div class="card-num-display" id="card-num-display">•••• •••• •••• ••••</div>
+        <div class="card-info-row"><span>CARD HOLDER</span><span>EXPIRES</span></div>
+        <div class="card-info-row"><span id="card-name-display" style="color:var(--light);font-size:13px;font-weight:600;text-transform:uppercase">YOUR NAME</span><span id="card-exp-display">MM/YY</span></div>
+      </div>
+      <div class="form-group"><label>Card Holder Name</label><input id="c-name" type="text" placeholder="Name on card" oninput="document.getElementById('card-name-display').textContent=this.value.toUpperCase()||'YOUR NAME'"></div>
+      <div class="form-group"><label>Card Number</label><input id="c-num" type="text" placeholder="•••• •••• •••• ••••" maxlength="19" oninput="formatCard(this)"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Expiry</label><input id="c-exp" type="text" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)"></div>
+        <div class="form-group"><label>CVV</label><input id="c-cvv" type="password" placeholder="•••" maxlength="3"></div>
+      </div>
+    </div>
+
+    <!-- UPI FIELDS -->
+    <div class="pay-fields" id="pf-upi">
+      <div class="form-group" style="margin-top:8px"><label>UPI ID</label><input id="u-id" type="text" placeholder="yourname@upi"></div>
+      <p style="color:var(--muted);font-size:13px;margin-top:-12px">A payment request will be sent to your UPI app.</p>
+    </div>
+
+    <!-- NET BANKING FIELDS -->
+    <div class="pay-fields" id="pf-net">
+      <div class="form-group" style="margin-top:8px"><label>Select Your Bank</label>
+        <select id="n-bank" style="background:#0a0505;border:1px solid rgba(139,0,0,.25);color:var(--light);padding:14px 18px;border-radius:10px;width:100%;font:14px 'Poppins',sans-serif;outline:none">
+          <option value="">— Choose a bank —</option>
+          <option>State Bank of India</option><option>HDFC Bank</option><option>ICICI Bank</option>
+          <option>Axis Bank</option><option>Kotak Mahindra Bank</option><option>Punjab National Bank</option>
+          <option>Bank of Baroda</option><option>Canara Bank</option><option>Union Bank of India</option>
+        </select>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-top:-12px">You'll be redirected to your bank's secure portal.</p>
+    </div>
+
+    <!-- COD -->
+    <div class="pay-fields" id="pf-cod">
+      <div class="cod-box">
+        <div class="cod-icon">📦</div>
+        <p>Pay in cash when your cursed relics arrive at your door.<br><br>Our spectral courier will collect payment upon delivery. Keep the lights on.</p>
+      </div>
+    </div>
+
+    <div class="pay-divider"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="color:var(--muted);font-size:14px">Total to Pay</span>
+      <span id="pay-total-display" style="color:var(--gold2);font-size:22px;font-weight:700;text-shadow:var(--gglow)">₹0</span>
+    </div>
+    <button class="pay-submit" onclick="finalPay()">🩸 Pay Now &amp; Seal the Pact</button>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="logo"><span class="candle-icon">🕯️</span> Relic<span>Vault</span></div>
+  <div class="nav-links">
+    <button class="nav-btn active-btn" id="nav-home" onclick="showPage('home')">Home</button>
+    <button class="nav-btn" id="nav-products" onclick="showPage('products')">Artifacts</button>
+    <button class="nav-btn cart-btn" id="nav-cart" onclick="showPage('cart')">🛒 Cart<span id="cart-count"></span></button>
+    <button class="nav-btn" id="nav-about" onclick="showPage('about')">About</button>
+    <button class="nav-btn" id="nav-contact" onclick="showPage('contact')">Contact</button>
+    <button class="nav-btn login-btn" id="nav-login" onclick="openAuth()">👤 Login</button>
+    <div id="nav-user">
+      <div class="user-avatar" id="user-initials">?</div>
+      <span id="user-name-display">Guest</span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+
+<!-- HOME -->
+<div class="page active" id="home">
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-fog"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">⚰️ Est. in the Forgotten Age ⚰️</div>
+      <h1 class="hero-title">RelicVault</h1>
+      <div class="hero-subtitle">Where the Cursed Find Their Keeper</div>
+      <p class="hero-desc">Step into the shadowed halls of the world's most forbidden marketplace. Haunted mirrors, cursed manuscripts, and ancient relics that refuse to rest — each artifact carries a history darker than the night itself.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="showPage('products')">☠ Explore the Vault</button>
+        <button class="btn-secondary" onclick="showPage('about')">Our Dark History</button>
+      </div>
+    </div>
+    <div class="hero-scroll"><span>Scroll</span><div class="arrow">↓</div></div>
+  </div>
+  <div class="featured-strip">
+    <div class="strip-label"><span class="strip-label-text">🩸 Most Cursed Artifacts 🩸</span></div>
+    <div class="grid" id="featured-grid"></div>
+  </div>
+</div>
+
+<!-- ARTIFACTS -->
+<div class="page" id="products">
+  <h1 class="section-title">☠ The Vault Collection</h1>
+  <p class="section-sub">Every relic is bound by a curse older than memory</p>
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterCards(this,'all')">All Relics</button>
+    <button class="filter-btn" onclick="filterCards(this,'cursed')">Cursed</button>
+    <button class="filter-btn" onclick="filterCards(this,'forbidden')">Forbidden</button>
+    <button class="filter-btn" onclick="filterCards(this,'haunted')">Haunted</button>
+    <button class="filter-btn" onclick="filterCards(this,'ancient')">Ancient</button>
+  </div>
+  <div class="grid" id="products-grid"></div>
+</div>
+
+<!-- CART -->
+<div class="page" id="cart">
+  <h1 class="section-title">🛒 Your Collection</h1>
+  <p class="section-sub">These relics are ready to leave with you</p>
+  <div class="cart-layout">
+    <div class="cart-items-section">
+      <div class="cart-section-head">Chosen Artifacts</div>
+      <div id="cart-empty-state" class="cart-empty"><div class="empty-icon">🕸️</div><p>Your cart lingers in darkness… empty and waiting.</p></div>
+      <ul id="cart-items"></ul>
+    </div>
+    <div class="cart-summary">
+      <div class="summary-title">Order Summary</div>
+      <div class="summary-row"><span>Subtotal</span><span>₹<span id="subtotal-val">0</span></span></div>
+      <div class="summary-row"><span>Cursed Handling</span><span>₹99</span></div>
+      <div class="summary-row total"><span>Total</span><span>₹<span id="total">0</span></span></div>
+      <button class="checkout-btn" onclick="checkout()">☠ Complete the Process</button>
+      <p style="margin-top:16px;text-align:center;font-size:12px;color:var(--muted)">⚰️ All sales are final. No returns from the beyond.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="page" id="about">
+  <div class="about-hero reveal">
+    <img src="https://images.unsplash.com/photo-1467226632440-65f0b4957563?q=80&w=1800&auto=format&fit=crop" alt="About">
+    <div class="about-hero-overlay"><div class="about-hero-text"><h2>Our Dark Legacy</h2><p>Guardians of the forgotten since the shadows first fell</p></div></div>
+  </div>
+  <div class="about-grid">
+    <div class="about-card reveal"><div class="icon">🕯️</div><h3>Founded in Darkness</h3><p>RelicVault was born from a single obsession: to preserve the artifacts that history tried to bury. Our founders — a rogue archaeologist and a disgraced curator — began collecting in 1923.</p></div>
+    <div class="about-card reveal"><div class="icon">☠️</div><h3>Curated by the Damned</h3><p>Every artifact in our vault has been personally examined, documented, and when necessary, partially contained. We don't sell decorations. We sell histories with consequences.</p></div>
+    <div class="about-card reveal"><div class="icon">🔮</div><h3>Authenticity Guaranteed</h3><p>Each relic ships with a Certificate of Cursed Authenticity, verified by three independent occultists. We do not sell reproductions. We cannot account for side effects.</p></div>
+    <div class="about-card reveal"><div class="icon">🗝️</div><h3>Discreet &amp; Secure</h3><p>All relics are wrapped in consecrated lead foil and shipped in double-sealed obsidian boxes. What arrives at your door is between you and whatever watches from beyond.</p></div>
+  </div>
+  <div class="about-lore reveal">
+    <p>RelicVault is a fictional e-commerce concept built to demonstrate modern web development — dynamic product rendering, shopping cart logic, animated UI, user authentication, and payment flows — all within a single self-contained HTML file.</p>
+    <p>This is not an actual working website </p>
+    <p>No items are actually for sale. Any supernatural occurrences following your visit are entirely coincidental and not the responsibility of RelicVault or its shadowed proprietors.</p>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div class="page" id="contact">
+  <h1 class="section-title">📜 Reach the Vault</h1>
+  <p class="section-sub">We may or may not respond, depending on the phase of the moon</p>
+  <div class="contact-layout">
+    <div class="contact-info">
+      <div class="contact-info-card reveal"><div class="icon">🕸️</div><div><h4>Address</h4><p>Rs puram <br>Coimbatore, 641402<br>The Void</p></div></div>
+      <div class="contact-info-card reveal"><div class="icon">🔮</div><div><h4>Séance Hours</h4><p>Mon–Fri: 11pm–3am<br>Weekends: 12am-2am</p></div></div>
+      <div class="contact-info-card reveal"><div class="icon">💀</div><div><h4>Contact</h4><p>+91 9876543210 <br>relics101@relicvault.shadow</p></div></div>
+    </div>
+    <div class="contact-form reveal">
+      <div class="form-row">
+        <div class="form-group"><label>Your Name</label><input id="cf-name" type="text" placeholder="Full name or alias"></div>
+        <div class="form-group"><label>Your Email</label><input id="cf-email" type="email" placeholder="you@domain.com"></div>
+      </div>
+      <div class="form-group"><label>Subject</label>
+        <select id="cf-subject"><option value="">— Choose your darkness —</option><option>Order inquiry</option><option>Artifact authentication</option><option>Curse removal</option><option>Report a haunting</option><option>Sell an artifact</option><option>Other</option></select>
+      </div>
+      <div class="form-group"><label>Message</label><textarea id="cf-msg" placeholder="Describe your situation…"></textarea></div>
+      <button class="btn-primary" style="width:100%;padding:16px;font-size:15px" onclick="sendMessage()">🩸 Send into the Void</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand"><div class="logo-foot">🕯️ RelicVault</div><p>The world's most forbidden marketplace for haunted artifacts, cursed relics, and ancient objects best left undisturbed.</p></div>
+    <div class="footer-col"><h4>Navigate</h4><ul><li><span onclick="showPage('home')">Home</span></li><li><span onclick="showPage('products')">All Artifacts</span></li><li><span onclick="showPage('cart')">Your Cart</span></li><li><span onclick="showPage('contact')">Contact</span></li></ul></div>
+    <div class="footer-col"><h4>Categories</h4><ul><li><span>Cursed Objects</span></li><li><span>Forbidden Tomes</span></li><li><span>Haunted Relics</span></li><li><span>Ancient Remains</span></li></ul></div>
+    <div class="footer-col"><h4>Vault Laws</h4><ul><li><span>No Returns Policy</span></li><li><span>Curse Disclaimer</span></li><li><span>Privacy (Ha.)</span></li><li><span>Terms of Darkness</span></li></ul></div>
+  </div>
+  <div class="footer-bottom"><p>© 2024 RelicVault. All contents reserved.</p><p class="footer-disclaimer">*Fictional demo project. No items actually sold here.</p></div>
+</footer>
+
+<script>
+/* ── DATA ── */
+const artifacts=[
+  {id:1,name:"Cursed Mirror",desc:"Recovered from an abandoned mansion in 1889. Guests report seeing faces that are not their own.",price:4999,tag:"Forbidden",cat:"forbidden",img:"https://img.freepik.com/premium-photo/inside-cursed-mirror-your-reflection-stares-background_1072167-19055.jpg?w=826",feat:true},
+  {id:2,name:"Haunted Pocket Watch",desc:"Stops at midnight without fail. The engraving on the back changes every lunar cycle.",price:3999,tag:"Cursed",cat:"cursed",img:"https://img.freepik.com/premium-photo/photo-haunted-mansion-pocket-watch-eerie-blue-tones-cobwebs-blue-monday-wallpaper-phone_655090-822256.jpg",feat:true},
+  {id:3,name:"Ancient Skull Relic",desc:"Found beneath a ruined monastery. The monk who digs it up is never seen the same again.",price:2999,tag:"Ancient",cat:"ancient",img:"https://img.freepik.com/premium-photo/skull-crowned-with-rusted-metal-ancient-relics-lying-forgotten-battlefield-covered-ash_875755-24074.jpg?w=996",feat:true},
+  {id:4,name:"Whispering Tome",desc:"A manuscript in three dead languages. Readers report hearing whispers for weeks afterward.",price:7499,tag:"Forbidden",cat:"forbidden",img:"https://thumbs.dreamstime.com/b/worn-tattered-old-book-mysterious-symbols-runes-cover-worn-tattered-old-book-mysterious-symbols-273166471.jpg?q=80&w=800&auto=format&fit=crop",feat:false},
+  {id:5,name:"Spirit Lantern",desc:"Burns with a pale blue flame that needs no oil. The flame dims when something unseen approaches.",price:5499,tag:"Haunted",cat:"haunted",img:"https://img.freepik.com/premium-photo/hydro-luminance-glowing-blue-lantern-with-3d-effect_789916-1645.jpg",feat:false},
+  {id:6,name:"Voodoo Doll",desc:"Handcrafted in 1750s New Orleans. The pins are original. Do not remove them.",price:6199,tag:"Cursed",cat:"cursed",img:"https://media.sketchfab.com/models/6aadd87569144b5c95f6de587c7c3e12/thumbnails/3b21e138548c48d79830eee233728947/c8c6d3c712e44ebbb4bf092f63df6616.jpeg",feat:false},
+  {id:7,name:"Obsidian Oracle",desc:"A volcanic glass sphere from Vesuvius. Visions guaranteed — clarity not guaranteed.",price:8999,tag:"Forbidden",cat:"forbidden",img:"https://img.freepik.com/premium-photo/dark-shiny-rocks-setting-off-black-gold-crystal-formations_528152-5066.jpg",feat:true},
+  {id:8,name:"Mummified Hand",desc:"Egyptian relic, Third Dynasty. Said to point toward hidden treasures. Or just toward the door.",price:9499,tag:"Ancient",cat:"ancient",img:"https://www.lebanoncircle.co.uk/cdn/shop/products/E1A59FBC-B3D6-4156-AA0B-2120F77BF0AF_5c57ed57-31f3-4a4c-a66c-7e557d43a4a7.jpg?v=1680105688",feat:false}
+];
+
+const fallback='https://images.unsplash.com/photo-1518998053901-5348d3961a04?q=80&w=800&auto=format&fit=crop';
+const curseLevel=p=>p>=8000?'☠☠☠ Extreme':p>=5000?'☠☠ High':'☠ Moderate';
+
+function makeCard(a){return`<div class="card reveal" data-category="${a.cat}">
+  <div class="card-img-wrap"><img src="${a.img}" alt="${a.name}" loading="lazy" onerror="this.src='${fallback}'"><div class="card-badge">${a.tag}</div></div>
+  <div class="card-content"><h3>${a.name}</h3><p>${a.desc}</p>
+  <div class="card-meta"><div class="price">₹${a.price.toLocaleString('en-IN')}</div><div class="curse-tag">${curseLevel(a.price)}</div></div>
+  <button class="buy-btn" onclick="addToCart(${a.id})">☠ Add to Cart</button></div></div>`;}
+
+document.getElementById('products-grid').innerHTML=artifacts.map(makeCard).join('');
+document.getElementById('featured-grid').innerHTML=artifacts.filter(a=>a.feat).map(makeCard).join('');
+triggerReveal();
+
+/* ── FILTER ── */
+function filterCards(btn,cat){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  document.querySelectorAll('#products-grid .card').forEach(c=>{c.style.display=(cat==='all'||c.dataset.category===cat)?'':'none';});
+}
+
+/* ── AUTH ── */
+let currentUser=JSON.parse(localStorage.getItem('rv_user')||'null');
+const getUsers=()=>JSON.parse(localStorage.getItem('rv_users')||'[]');
+const saveUsers=u=>localStorage.setItem('rv_users',JSON.stringify(u));
+
+function updateAuthUI(){
+  const li=document.getElementById('nav-login'),nu=document.getElementById('nav-user');
+  if(currentUser){
+    li.style.display='none';nu.style.display='flex';
+    document.getElementById('user-name-display').textContent=currentUser.name.split(' ')[0];
+    document.getElementById('user-initials').textContent=currentUser.name.charAt(0).toUpperCase();
+  }else{li.style.display='';nu.style.display='none';}
+}
+
+function openAuth(afterFn){
+  window._afterAuth=afterFn||null;
+  document.getElementById('auth-modal').classList.add('open');
+  switchTab('login');
+}
+function closeAuth(){document.getElementById('auth-modal').classList.remove('open');}
+
+function switchTab(t){
+  ['login','signup'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+    document.getElementById('form-'+x).classList.toggle('active',x===t);
+  });
+  document.getElementById('li-err').textContent='';
+  document.getElementById('su-err').textContent='';
+}
+
+function doLogin(){
+  const email=document.getElementById('li-email').value.trim();
+  const pass=document.getElementById('li-pass').value;
+  const err=document.getElementById('li-err');
+  if(!email||!pass){err.textContent='Please fill all fields.';return;}
+  const users=getUsers();
+  const user=users.find(u=>u.email===email&&u.pass===btoa(pass));
+  if(!user){err.textContent='Invalid email or password.';return;}
+  currentUser=user;localStorage.setItem('rv_user',JSON.stringify(user));
+  updateAuthUI();closeAuth();showToast(`🕯️ Welcome back, <strong>${user.name.split(' ')[0]}</strong>!`);
+  if(window._afterAuth)window._afterAuth();
+}
+
+function doSignup(){
+  const name=document.getElementById('su-name').value.trim();
+  const email=document.getElementById('su-email').value.trim();
+  const pass=document.getElementById('su-pass').value;
+  const err=document.getElementById('su-err');
+  if(!name||!email||!pass){err.textContent='Please fill all fields.';return;}
+  if(pass.length<6){err.textContent='Password must be at least 6 characters.';return;}
+  const users=getUsers();
+  if(users.find(u=>u.email===email)){err.textContent='This email is already registered.';return;}
+  const user={name,email,pass:btoa(pass)};
+  users.push(user);saveUsers(users);
+  currentUser=user;localStorage.setItem('rv_user',JSON.stringify(user));
+  updateAuthUI();closeAuth();showToast(`💀 logged in successfully, <strong>${name.split(' ')[0]}</strong>!`);
+  if(window._afterAuth)window._afterAuth();
+}
+
+function logout(){
+  currentUser=null;localStorage.removeItem('rv_user');
+  updateAuthUI();showToast('🗝️ You have left the vault. For now.');
+}
+
+updateAuthUI();
+
+/* ── CART ── */
+let cart=[];
+function addToCart(id){
+  const item=artifacts.find(a=>a.id===id);
+  const ex=cart.find(c=>c.id===id);
+  ex?ex.qty++:cart.push({...item,qty:1});
+  updateCart();showToast(`💀 <strong>${item.name}</strong> claimed by your cart!`);
+  const btn=document.getElementById('nav-cart');
+  btn.style.transform='scale(1.15)';btn.style.boxShadow='0 0 20px rgba(192,57,43,.8)';
+  setTimeout(()=>{btn.style.transform='';btn.style.boxShadow='';},300);
+}
+function removeFromCart(id){
+  const i=cart.findIndex(c=>c.id===id);
+  if(i!==-1){const n=cart[i].name;cart.splice(i,1);updateCart();showToast(`🗝️ <strong>${n}</strong> returned to the vault.`);}
+}
+function updateCart(){
+  const sub=cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const tot=sub+(cart.length?99:0);
+  const qty=cart.reduce((s,c)=>s+c.qty,0);
+  document.getElementById('subtotal-val').textContent=sub.toLocaleString('en-IN');
+  document.getElementById('total').textContent=tot.toLocaleString('en-IN');
+  const cc=document.getElementById('cart-count');
+  cc.style.display=qty?'flex':'none';cc.textContent=qty;
+  document.getElementById('cart-empty-state').style.display=cart.length?'none':'block';
+  document.getElementById('cart-items').innerHTML=cart.map(c=>`<li class="cart-item">
+    <div class="cart-item-info"><div class="cart-item-name">${c.name}${c.qty>1?` <small style="color:var(--muted)">×${c.qty}</small>`:''}</div>
+    <div class="cart-item-price">₹${(c.price*c.qty).toLocaleString('en-IN')}</div></div>
+    <button class="remove-btn" onclick="removeFromCart(${c.id})">Remove</button></li>`).join('');
+}
+
+function checkout(){
+  if(!cart.length){showToast('🕸️ Your cart is empty.');return;}
+  if(!currentUser){showToast('👤 Sign in first to complete your ritual.');openAuth(()=>showPage('cart'));return;}
+  const tot=cart.reduce((s,c)=>s+c.price*c.qty,0)+99;
+  document.getElementById('pay-total-display').textContent='₹'+tot.toLocaleString('en-IN');
+  document.getElementById('pay-modal').classList.add('open');
+  selectPay('card');
+}
+function closePay(){document.getElementById('pay-modal').classList.remove('open');}
+
+/* ── PAYMENT ── */
+let selectedPay='card';
+function selectPay(m){
+  selectedPay=m;
+  ['card','upi','net','cod'].forEach(x=>{
+    document.getElementById('pm-'+x).classList.toggle('selected',x===m);
+    document.getElementById('pf-'+x).classList.toggle('active',x===m);
+  });
+}
+
+function formatCard(el){
+  let v=el.value.replace(/\D/g,'').substring(0,16);
+  v=v.match(/.{1,4}/g)?.join(' ')||v;el.value=v;
+  document.getElementById('card-num-display').textContent=v.padEnd(19,'•').replace(/\d(?=.{5,})/g,'•')||'•••• •••• •••• ••••';
+  document.getElementById('card-num-display').textContent=v||'•••• •••• •••• ••••';
+}
+function formatExpiry(el){
+  let v=el.value.replace(/\D/g,'');
+  if(v.length>=2)v=v.substring(0,2)+' / '+v.substring(2,4);
+  el.value=v;
+  document.getElementById('card-exp-display').textContent=v||'MM/YY';
+}
+
+function finalPay(){
+  if(selectedPay==='card'){
+    const n=document.getElementById('c-name').value.trim();
+    const num=document.getElementById('c-num').value.replace(/\s/g,'');
+    const exp=document.getElementById('c-exp').value.trim();
+    const cvv=document.getElementById('c-cvv').value.trim();
+    if(!n||num.length<16||exp.length<4||cvv.length<3){showToast('🩸 Fill all card details correctly.');return;}
+  }else if(selectedPay==='upi'){
+    const uid=document.getElementById('u-id').value.trim();
+    if(!uid||!uid.includes('@')){showToast('🩸 Enter a valid UPI ID (e.g. name@upi).');return;}
+  }else if(selectedPay==='net'){
+    if(!document.getElementById('n-bank').value){showToast('🩸 Please select your bank.');return;}
+  }
+  const tot=cart.reduce((s,c)=>s+c.price*c.qty,0)+99;
+  cart=[];updateCart();closePay();
+  openModal('⚰️','The Ritual is Complete',`Payment of ₹${tot.toLocaleString('en-IN')} received.\nYour cursed relics have been bound to you\nExpect delivery within 3–5 haunted evenings.`);
+}
+
+/* ── NAVIGATION ── */
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active-btn'));
+  const btn=document.getElementById('nav-'+id);if(btn)btn.classList.add('active-btn');
+  window.scrollTo({top:0,behavior:'smooth'});setTimeout(triggerReveal,100);
+}
+
+/* ── SUCCESS MODAL ── */
+function openModal(icon,title,msg){
+  document.getElementById('modal-icon').textContent=icon;
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-msg').innerHTML=msg.replace(/\n/g,'<br>');
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+document.getElementById('auth-modal').addEventListener('click',e=>{if(e.target===document.getElementById('auth-modal'))closeAuth();});
+document.getElementById('pay-modal').addEventListener('click',e=>{if(e.target===document.getElementById('pay-modal'))closePay();});
+
+/* ── CONTACT ── */
+function sendMessage(){
+  const name=document.getElementById('cf-name').value.trim();
+  const email=document.getElementById('cf-email').value.trim();
+  const msg=document.getElementById('cf-msg').value.trim();
+  if(!name||!email||!msg){showToast('🩸 Fill all fields before sending into the void.');return;}
+  ['cf-name','cf-email','cf-subject','cf-msg'].forEach(id=>document.getElementById(id).value='');
+  openModal('🔮','Message Dispatched',`Your words have been carried into the void, ${name}.\nOur shadows will be in touch — keep the lights on.`);
+}
+
+/* ── TOAST ── */
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');t.innerHTML=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+/* ── SCROLL REVEAL ── */
+function triggerReveal(){
+  const obs=new IntersectionObserver((entries)=>{entries.forEach((e,i)=>{if(e.isIntersecting)setTimeout(()=>e.target.classList.add('visible'),i*80);});},{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+}
+
+/* ── PARTICLES ── */
+(function(){
+  const canvas=document.getElementById('particles-canvas');
+  const ctx=canvas.getContext('2d');let W,H,P=[];
+  const resize=()=>{W=canvas.width=innerWidth;H=canvas.height=innerHeight;};
+  const colors=['rgba(139,0,0,','rgba(201,168,76,','rgba(180,50,50,','rgba(255,60,0,'];
+  function Particle(){this.reset();}
+  Particle.prototype.reset=function(){
+    this.x=Math.random()*W;this.y=Math.random()*H;this.r=Math.random()*1.5+.3;
+    this.speed=Math.random()*.4+.1;this.angle=Math.random()*Math.PI*2;
+    this.drift=(Math.random()-.5)*.005;this.life=Math.random();this.decay=Math.random()*.003+.001;
+    this.color=colors[Math.floor(Math.random()*colors.length)];};
+  Particle.prototype.update=function(){this.angle+=this.drift;this.x+=Math.cos(this.angle)*this.speed;this.y-=this.speed*.5;this.life-=this.decay;if(this.life<=0||this.y<-10)this.reset();};
+  Particle.prototype.draw=function(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=this.color+this.life+')';ctx.fill();};
+  resize();P=Array.from({length:80},()=>new Particle());
+  (function loop(){ctx.clearRect(0,0,W,H);P.forEach(p=>{p.update();p.draw();});requestAnimationFrame(loop);})();
+  addEventListener('resize',resize);
+})();
+</script>
+</body>
+</html>
